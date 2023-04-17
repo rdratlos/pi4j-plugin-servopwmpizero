@@ -200,6 +200,10 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
         return this;
     }
     
+    public Context getContext() {
+        return this.context;
+    }
+
     public ServoPwmPiDevice getPwmDevice() {
         return this.device;
     }

@@ -92,7 +92,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
         int off_value;
         int on_steps;
         
-        on_steps = Math.round(4096 / 100 * dutyCycle);
+        on_steps = Math.round(4096f / 100f * dutyCycle);
         switch(on_steps) {
             case 4096:
                 on_value = 0x1000;
