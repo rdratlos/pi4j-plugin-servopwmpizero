@@ -1,8 +1,11 @@
 package com.pi4j.plugin.addonboard.servopwmpi;
 
+import static java.util.Map.entry;
+
 // MARKER INTERFACE
 
 import java.util.EnumSet;
+import java.util.Map;
 
 
 /**
@@ -105,11 +108,28 @@ public interface SERVOPWMPI {
     static final int LED14 = 13;
     static final int LED15 = 14;
     static final int LED16 = 15;
+    static final Map<String,Integer> PWM_PINS = Map.ofEntries(
+        entry("LED1", LED1),
+        entry("LED2", LED2),
+        entry("LED3", LED3),
+        entry("LED4", LED4),
+        entry("LED5", LED5),
+        entry("LED6", LED6),
+        entry("LED7", LED7),
+        entry("LED8", LED8),
+        entry("LED9", LED9),
+        entry("LED10", LED10),
+        entry("LED11", LED11),
+        entry("LED12", LED12),
+        entry("LED13", LED13),
+        entry("LED14", LED14),
+        entry("LED15", LED15)
+    );
 
     // communication registers
     static final byte REGISTER_MODE_1 = 0x00;
     static final byte REGISTER_MODE_2 = 0x01;
-    
+
     /**
      * Mode 1 register defaults
      *
@@ -141,7 +161,7 @@ public interface SERVOPWMPI {
 
     // PWM frequency (pre-scale) register
     static final int REGISTER_PRE_SCALE = 0xFE;
-    
+
     static final double FREQ_OSC_CLOCK = 25000000.0;
     static final byte DEFAULT_PRE_SCALE = 0x1E;
     static final int DEFAULT_PWM_FREQUENCY = 200;   // PRE_SCALE = 0x1E
@@ -205,7 +225,7 @@ public interface SERVOPWMPI {
             return (value > 0 ? 1 : 0);
         }
 
-        /**
+        /**treemap
          * <p>all.</p>
          *
          * @return a {@link java.util.EnumSet} object.
@@ -233,7 +253,7 @@ public interface SERVOPWMPI {
 
     /**
      * Output Polarity (INVRT) Enumerations
-     * 
+     *
      * @author Thomas Reim
      * @version $Id: $Id
      */
@@ -310,10 +330,10 @@ public interface SERVOPWMPI {
             return OutputPolarity.NORMAL; // default
         }
     }
-    
+
     /**
      * <span style="text-decoration:overline;">OE</span> Mode (OUTNE) Enumerations
-     * 
+     *
      * @author Thomas Reim
      * @version $Id: $Id
      */
@@ -387,10 +407,10 @@ public interface SERVOPWMPI {
             return OEMode.LOW; // default
         }
     }
-    
+
     /**
      * Outputs Change (OCH) Enumerations
-     * 
+     *
      * @author Thomas Reim
      * @version $Id: $Id
      */
@@ -471,7 +491,7 @@ public interface SERVOPWMPI {
             return OutputsChangeMode.STOP; // default
         }
     }
-    
+
 }
 
 
