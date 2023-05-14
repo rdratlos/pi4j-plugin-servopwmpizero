@@ -93,6 +93,7 @@ public class ServoPwmPiPwmImpl extends PwmBase  implements ServoPwmPiPwm {
     public ServoPwmPiPwm off() throws IOException {
         this.onState = false;
         this.device.off(this);
+        setDutyCycle(0f);
         return this;
     }
 
