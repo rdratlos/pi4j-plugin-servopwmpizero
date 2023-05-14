@@ -35,7 +35,6 @@ import com.pi4j.extension.addonboard.AddOnBoard;
 import com.pi4j.provider.Provider;
 import com.pi4j.plugin.addonboard.servopwmpi.provider.pwm.ServoPwmPiProvider;
 import com.pi4j.plugin.addonboard.servopwmpi.platform.ServoPwmPiPlatform;
-import com.pi4j.plugin.linuxfs.provider.gpio.digital.LinuxFsDigitalOutputProvider;
 import java.util.ServiceLoader;
 
 /**

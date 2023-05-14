@@ -142,13 +142,19 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
                 invOE = context.registry().get(ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_PIN_ID);
             }
             if (invOE == null) {
+                String preferredOEProvider;
+                if (context.hasProvider(LinuxFsDigitalOutputProvider.ID)) {
+                    preferredOEProvider = LinuxFsDigitalOutputProvider.ID;
+                } else {
+                    preferredOEProvider = context.provider(IOType.DIGITAL_OUTPUT).id();
+                }
                 var oeConfig = DigitalOutput.newConfigBuilder(context)
                         .id(ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_PIN_ID)
                         .name("Servo PWM Pi O\u0305E\u0305 control")
                         .address(SERVOPWMPI.PI_GPIO_OE)
                         .shutdown(DigitalState.HIGH)
                         .initial(DigitalState.HIGH)
-                        .provider(LinuxFsDigitalOutputProvider.ID);
+                        .provider(preferredOEProvider);
                 invOE = context.create(oeConfig);
                 invOE.addListener((DigitalStateChangeEvent e) -> {
                     logger.info(String.format("Servo PWM Pi O\u0305E\u0305 control: outputs %s", (e.state() == DigitalState.HIGH) ? "disabled" : "enabled"));

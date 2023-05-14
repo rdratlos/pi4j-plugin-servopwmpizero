@@ -8,8 +8,11 @@ import com.pi4j.io.exception.IOException;
 import com.pi4j.io.i2c.I2C;
 import com.pi4j.plugin.addonboard.servopwmpi.SERVOPWMPI;
 import com.pi4j.plugin.addonboard.servopwmpi.provider.pwm.ServoPwmPiPwm;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
+    private static final Logger logger = LoggerFactory.getLogger(ServoPwmPiDeviceImpl.class);
 
     // local/internal I2C reference for communication with hardware chip
     protected final I2C i2c;
@@ -47,6 +50,12 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
         } catch (Pi4JException e) {
             if (this.i2c != null) {
                 throw new InitializeException("ServoPwmPiDeviceImpl::initialize() I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") failed");
+            } else {
+                throw new InitializeException("ServoPwmPiDeviceImpl::initialize() I2C connection to Servo PWM Pi device not configured");
+            }
+        } catch (IllegalStateException e) {
+            if (this.i2c != null) {
+                logger.warn("Operating I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") in test (mock) mode");
             } else {
                 throw new InitializeException("ServoPwmPiDeviceImpl::initialize() I2C connection to Servo PWM Pi device not configured");
             }
@@ -198,6 +207,13 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
                 } else {
                     throw new InitializeException("ServoPwmPiDeviceImpl::setFrequency() I2C connection to Servo PWM Pi device not configured");
                 }
+            } catch (IllegalStateException e) {
+                if (this.i2c != null) {
+                    logger.warn("Operating I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") in test (mock) mode");
+                    currentMode1State = MODE_1_DEFAULT;
+                } else {
+                    throw new InitializeException("ServoPwmPiDeviceImpl::setFrequency() I2C connection to Servo PWM Pi device not configured");
+                }
             }
             /*
              * Switch oscillator off (SLEEP mode)
@@ -224,7 +240,11 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
                 this.i2c.writeRegister(REGISTER_MODE_1, restartMode);
             }
             this.requested_pwm_frequency = frequency;
-            this.actual_pwm_frequency = preScaleToFrequency((byte) this.i2c.readRegister(REGISTER_PRE_SCALE));
+            try {
+                this.actual_pwm_frequency = preScaleToFrequency((byte) this.i2c.readRegister(REGISTER_PRE_SCALE));
+            } catch (IllegalStateException e) {
+                this.actual_pwm_frequency = this.requested_pwm_frequency;
+            }
         }
     }
 
@@ -242,6 +262,13 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
             } else {
                 throw new InitializeException("ServoPwmPiDeviceImpl::refreshPwmFrequencyConfiguration() I2C connection to Servo PWM Pi device not configured");
             }
+        } catch (IllegalStateException e) {
+            if (this.i2c != null) {
+                logger.warn("Operating I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") in test (mock) mode");
+                pre_scale = DEFAULT_PRE_SCALE;
+            } else {
+                throw new InitializeException("ServoPwmPiDeviceImpl::refreshPwmFrequencyConfiguration() I2C connection to Servo PWM Pi device not configured");
+            }
         }
         this.actual_pwm_frequency = preScaleToFrequency(pre_scale);
         if (pre_scale == DEFAULT_PRE_SCALE) {
@@ -256,7 +283,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
      * @param frequency
      * @return PRE_SCALE value
      */
-    private byte frequencyToPreScale (int frequency) {
+    public static byte frequencyToPreScale (int frequency) {
         double freqeval;
         
         freqeval = FREQ_OSC_CLOCK;
@@ -271,7 +298,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
      * @param pre_scale
      * @return PWM frequency
      */
-    private int preScaleToFrequency (byte pre_scale) {
+    public static int preScaleToFrequency (byte pre_scale) {
         double freqeval;
         
         freqeval = FREQ_OSC_CLOCK;
@@ -287,7 +314,16 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
         byte sleepMode;
         
         if (!this.isSleeping()) {
-            currentMode1State = (byte) this.i2c.readRegister(REGISTER_MODE_1);
+            try {
+                currentMode1State = (byte) this.i2c.readRegister(REGISTER_MODE_1);
+            } catch (IllegalStateException e) {
+                if (this.i2c != null) {
+                    logger.warn("Operating I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") in test (mock) mode");
+                    currentMode1State = MODE_1_DEFAULT;
+                } else {
+                    throw new InitializeException("ServoPwmPiDeviceImpl::sleep() I2C connection to Servo PWM Pi device not configured");
+                }
+            }
             sleepMode = (byte) (currentMode1State | SLEEP_MASK);
             synchronized (this.i2c) {
                 this.i2c.writeRegister(REGISTER_MODE_1, sleepMode);
@@ -302,7 +338,16 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
         byte wakeUpMode;
         
         if (this.isSleeping()) {
-            currentMode1State = (byte) this.i2c.readRegister(REGISTER_MODE_1);
+            try {
+                currentMode1State = (byte) this.i2c.readRegister(REGISTER_MODE_1);
+            } catch (IllegalStateException e) {
+                if (this.i2c != null) {
+                    logger.warn("Operating I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") in test (mock) mode");
+                    currentMode1State = MODE_1_DEFAULT;
+                } else {
+                    throw new InitializeException("ServoPwmPiDeviceImpl::wake() I2C connection to Servo PWM Pi device not configured");
+                }
+            }
             wakeUpMode = (byte) (currentMode1State & ~SLEEP_MASK);
             synchronized (this.i2c) {
                 this.i2c.writeRegister(REGISTER_MODE_1, wakeUpMode);
@@ -321,6 +366,13 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
         } catch (Pi4JException e) {
             if (this.i2c != null) {
                 throw new InitializeException("ServoPwmPiDeviceImpl::isSleeping() I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") failed");
+            } else {
+                throw new InitializeException("ServoPwmPiDeviceImpl::isSleeping() I2C connection to Servo PWM Pi device not configured");
+            }
+        } catch (IllegalStateException e) {
+            if (this.i2c != null) {
+                logger.warn("Operating I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") in test (mock) mode");
+                currentMode1State = MODE_1_DEFAULT;
             } else {
                 throw new InitializeException("ServoPwmPiDeviceImpl::isSleeping() I2C connection to Servo PWM Pi device not configured");
             }
@@ -353,6 +405,13 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
             } else {
                 throw new InitializeException("ServoPwmPiDeviceImpl::getOutputPolarity() I2C connection to Servo PWM Pi device not configured");
             }
+        } catch (IllegalStateException e) {
+            if (this.i2c != null) {
+                logger.warn("Operating I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") in test (mock) mode");
+                currentMode2State = MODE_2_DEFAULT;
+            } else {
+                throw new InitializeException("ServoPwmPiDeviceImpl::getOutputPolarity() I2C connection to Servo PWM Pi device not configured");
+            }
         }
         outputMode = (byte) (currentMode2State & INVRT_MASK);
         return OutputPolarity.parse(String.format("0x%02x", outputMode));
@@ -369,6 +428,13 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
         } catch (Pi4JException e) {
             if (this.i2c != null) {
                 throw new InitializeException("ServoPwmPiDeviceImpl::setOutputPolarity() I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") failed");
+            } else {
+                throw new InitializeException("ServoPwmPiDeviceImpl::setOutputPolarity() I2C connection to Servo PWM Pi device not configured");
+            }
+        } catch (IllegalStateException e) {
+            if (this.i2c != null) {
+                logger.warn("Operating I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") in test (mock) mode");
+                currentMode2State = MODE_2_DEFAULT;
             } else {
                 throw new InitializeException("ServoPwmPiDeviceImpl::setOutputPolarity() I2C connection to Servo PWM Pi device not configured");
             }
@@ -396,6 +462,13 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
             } else {
                 throw new InitializeException("ServoPwmPiDeviceImpl::getOutputDriverType() I2C connection to Servo PWM Pi device not configured");
             }
+        } catch (IllegalStateException e) {
+            if (this.i2c != null) {
+                logger.warn("Operating I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") in test (mock) mode");
+                currentMode2State = MODE_2_DEFAULT;
+            } else {
+                throw new InitializeException("ServoPwmPiDeviceImpl::getOutputDriverType() I2C connection to Servo PWM Pi device not configured");
+            }
         }
         outputType = (byte) (currentMode2State & OUTDRV_MASK);
         return OutputDriver.parse(String.format("0x%02x", outputType));
@@ -412,6 +485,13 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
         } catch (Pi4JException e) {
             if (this.i2c != null) {
                 throw new InitializeException("ServoPwmPiDeviceImpl::setOutputDriverType() I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") failed");
+            } else {
+                throw new InitializeException("ServoPwmPiDeviceImpl::setOutputDriverType() I2C connection to Servo PWM Pi device not configured");
+            }
+        } catch (IllegalStateException e) {
+            if (this.i2c != null) {
+                logger.warn("Operating I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") in test (mock) mode");
+                currentMode2State = MODE_2_DEFAULT;
             } else {
                 throw new InitializeException("ServoPwmPiDeviceImpl::setOutputDriverType() I2C connection to Servo PWM Pi device not configured");
             }
@@ -439,6 +519,13 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
             } else {
                 throw new InitializeException("ServoPwmPiDeviceImpl::getOutNEMode() I2C connection to Servo PWM Pi device not configured");
             }
+        } catch (IllegalStateException e) {
+            if (this.i2c != null) {
+                logger.warn("Operating I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") in test (mock) mode");
+                currentMode2State = MODE_2_DEFAULT;
+            } else {
+                throw new InitializeException("ServoPwmPiDeviceImpl::getOutNEMode() I2C connection to Servo PWM Pi device not configured");
+            }
         }
         oePinMode = (byte) (currentMode2State & OUTNE_MASK);
         if (oePinMode == OEMode.HIGH.getValue()) {
@@ -463,9 +550,16 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
             currentMode2State = (byte) this.i2c.readRegister(REGISTER_MODE_2);
         } catch (Pi4JException e) {
             if (this.i2c != null) {
-                throw new InitializeException("ServoPwmPiDeviceImpl::getOutNEMode() I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") failed");
+                throw new InitializeException("ServoPwmPiDeviceImpl::getOutNEModeBitstring() I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") failed");
             } else {
-                throw new InitializeException("ServoPwmPiDeviceImpl::getOutNEMode() I2C connection to Servo PWM Pi device not configured");
+                throw new InitializeException("ServoPwmPiDeviceImpl::getOutNEModeBitstring() I2C connection to Servo PWM Pi device not configured");
+            }
+        } catch (IllegalStateException e) {
+            if (this.i2c != null) {
+                logger.warn("Operating I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") in test (mock) mode");
+                currentMode2State = MODE_2_DEFAULT;
+            } else {
+                throw new InitializeException("ServoPwmPiDeviceImpl::getOutNEModeBitstring() I2C connection to Servo PWM Pi device not configured");
             }
         }
         String b = String.format("%16s", Integer.toBinaryString(currentMode2State & OUTNE_MASK)).replace(' ', '0');
@@ -483,6 +577,13 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
         } catch (Pi4JException e) {
             if (this.i2c != null) {
                 throw new InitializeException("ServoPwmPiDeviceImpl::setOutNEMode() I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") failed");
+            } else {
+                throw new InitializeException("ServoPwmPiDeviceImpl::setOutNEMode() I2C connection to Servo PWM Pi device not configured");
+            }
+        } catch (IllegalStateException e) {
+            if (this.i2c != null) {
+                logger.warn("Operating I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") in test (mock) mode");
+                currentMode2State = MODE_2_DEFAULT;
             } else {
                 throw new InitializeException("ServoPwmPiDeviceImpl::setOutNEMode() I2C connection to Servo PWM Pi device not configured");
             }
@@ -510,6 +611,13 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
             } else {
                 throw new InitializeException("ServoPwmPiDeviceImpl::getOutputsChangeMode() I2C connection to Servo PWM Pi device not configured");
             }
+        } catch (IllegalStateException e) {
+            if (this.i2c != null) {
+                logger.warn("Operating I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") in test (mock) mode");
+                currentMode2State = MODE_2_DEFAULT;
+            } else {
+                throw new InitializeException("ServoPwmPiDeviceImpl::getOutputsChangeMode() I2C connection to Servo PWM Pi device not configured");
+            }
         }
         ochMode = (byte) (currentMode2State & OCH_MASK);
         return OutputsChangeMode.parse(String.format("0x%02x", ochMode));
@@ -526,6 +634,13 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
         } catch (Pi4JException e) {
             if (this.i2c != null) {
                 throw new InitializeException("ServoPwmPiDeviceImpl::setOutputsChangeMode() I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") failed");
+            } else {
+                throw new InitializeException("ServoPwmPiDeviceImpl::setOutputsChangeMode() I2C connection to Servo PWM Pi device not configured");
+            }
+        } catch (IllegalStateException e) {
+            if (this.i2c != null) {
+                logger.warn("Operating I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") in test (mock) mode");
+                currentMode2State = MODE_2_DEFAULT;
             } else {
                 throw new InitializeException("ServoPwmPiDeviceImpl::setOutputsChangeMode() I2C connection to Servo PWM Pi device not configured");
             }
