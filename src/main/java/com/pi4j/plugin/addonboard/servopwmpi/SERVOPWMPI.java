@@ -123,7 +123,8 @@ public interface SERVOPWMPI {
         entry("LED12", LED12),
         entry("LED13", LED13),
         entry("LED14", LED14),
-        entry("LED15", LED15)
+        entry("LED15", LED15),
+        entry("LED16", LED16)
     );
 
     // communication registers
