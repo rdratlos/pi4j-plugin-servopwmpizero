@@ -239,11 +239,21 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
         return this.device.isSleeping();
     }
 
+    /**
+     *  Switch Servo PWM Pi board to sleep mode.
+     *
+     *  No PWM control is possible. LED outputs cannot be turned on, off or dimmed
+     */
     public void sleep() {
         this.device.sleep();
         logger.info(String.format("[%s]: oscillator switched off (SLEEP)", this.id));
     }
 
+    /**
+     *  Switch Servo PWM Pi board into normal mode.
+     *
+     *  PWM control is enabled.
+     */
     public void wake() {
         this.device.wake();
         logger.info(String.format("[%s]: oscillator switched on", this.id));
