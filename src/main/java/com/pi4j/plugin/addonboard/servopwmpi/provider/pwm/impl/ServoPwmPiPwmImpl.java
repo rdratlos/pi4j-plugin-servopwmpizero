@@ -83,8 +83,13 @@ public class ServoPwmPiPwmImpl extends PwmBase  implements ServoPwmPiPwm {
     /** {@inheritDoc} */
     @Override
     public ServoPwmPiPwm on() throws IOException {
-        this.onState = true;
-        this.device.on(this, getDutyCycle());
+        float configuredDutyCycle = getDutyCycle();
+        if (dutyCycle > 0) {
+            this.onState = true;
+            this.device.on(this, configuredDutyCycle);
+        } else {
+            this.off();
+        }
         return this;
     }
 
