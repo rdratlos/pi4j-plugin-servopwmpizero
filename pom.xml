@@ -16,6 +16,14 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
+    <!-- SOURCE CONTROL -->
+    <scm>
+        <developerConnection>scm:git:ssh://${server.scm.ssh.user}@${server.scm.host}/${server.scm.project}/pi4j-plugin-servopwmpi.git</developerConnection>
+        <connection>scm:git:https://${server.scm.host}/${server.scm.project}/pi4j-plugin-servopwmpi.git</connection>
+        <url>https://${server.scm.host}/${server.scm.project}/pi4j-plugin-servopwmpi.git</url>
+        <tag>HEAD</tag>
+    </scm>
+
     <!-- DEPENDENCIES -->
     <dependencies>
         <dependency>
