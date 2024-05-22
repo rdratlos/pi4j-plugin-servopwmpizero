@@ -63,11 +63,13 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
     private static final int SERVO_PWM_PI_DEFAULT_I2C_ADDRESS = SERVOPWMPI.DEFAULT_ADDRESS;
     private static final int SERVO_PWM_PI_I2C_BUS = 1;
     private int i2cAddress = -1;
+    // Raspberry Pi board GPIO number to use for output enable/disable of the hardware chip
+    private int piGpioInvOENumber = -1;
 
     protected ServoPwmPiDevice device = null;
     // local/internal GPIO reference for output enable/disable of the hardware chip
     protected static DigitalOutput invOE = null;
-    
+
     /**
      * <p>Constructor for MockPlatform.</p>
      */
@@ -80,6 +82,15 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
               ServoPwmPi.SERVOPWMPIZERO_PLATFORM_NAME + String.format(" (i2c: 0x%x)", i2c_address),
               ServoPwmPi.SERVOPWMPIZERO_PLATFORM_DESCRIPTION);
         this.i2cAddress = i2c_address;
+        this.piGpioInvOENumber = SERVOPWMPI.PI_GPIO_OE;
+    }
+
+    public ServoPwmPiPlatform(int i2c_address, int pi_gpio_invOE_number) {
+        super(ServoPwmPi.SERVOPWMPIZERO_PLATFORM_ID + String.format("_%d", i2c_address),
+              ServoPwmPi.SERVOPWMPIZERO_PLATFORM_NAME + String.format(" (i2c: 0x%x)", i2c_address),
+              ServoPwmPi.SERVOPWMPIZERO_PLATFORM_DESCRIPTION);
+        this.i2cAddress = i2c_address;
+        this.piGpioInvOENumber = pi_gpio_invOE_number;
     }
 
     /** {@inheritDoc} */
@@ -106,12 +117,12 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
     }
 
     public ServoPwmPiPwm create(ServoPwmPiPwmConfig config) {
-        
+
         // validate provider setup
         if(this.device == null){
             throw new ProviderException("ServoPwmPiPlatform::initialise(...) has not been called; this platform must be initialised prior to creating I/O instances.");
         }
-        
+
         // create new output I/O instance
         ServoPwmPiProvider provider = this.getProvider(ServoPwmPiProvider.ID);
         if(provider == null) {
@@ -125,12 +136,12 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
     @Override
     public ServoPwmPiPlatform initialize(Context context) throws InitializeException {
         I2C i2c = null;
-        
+
         // Prevent from double initialisation
         if (this.device != null) {
             return this;
         }
-        
+
         if (invOE == null && context.hasProvider(IOType.DIGITAL_OUTPUT)) {
             /*
              * Servo PWM Pi Context wants OE control of the add-on board.
@@ -151,7 +162,7 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
                 var oeConfig = DigitalOutput.newConfigBuilder(context)
                         .id(ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_PIN_ID)
                         .name("Servo PWM Pi O\u0305E\u0305 control")
-                        .address(SERVOPWMPI.PI_GPIO_OE)
+                        .address(this.piGpioInvOENumber)
                         .shutdown(DigitalState.HIGH)
                         .initial(DigitalState.HIGH)
                         .provider(preferredOEProvider);
@@ -160,7 +171,7 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
                     logger.info(String.format("Servo PWM Pi O\u0305E\u0305 control: outputs %s", (e.state() == DigitalState.HIGH) ? "disabled" : "enabled"));
                 });
                 logger.info("adding digital output to registry [id={}; name={}; description={}; class={}]",
-                            invOE.id(), invOE.name(), invOE.description(), invOE.getClass().getName()); 
+                            invOE.id(), invOE.name(), invOE.description(), invOE.getClass().getName());
             }
         }
 
@@ -205,7 +216,7 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
 
         return this;
     }
-    
+
     public Context getContext() {
         return this.context;
     }
@@ -234,7 +245,7 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
     public int pwmFrequency() {
         return this.getPwmFrequency();
     }
-    
+
     public boolean isSleeping() {
         return this.device.isSleeping();
     }
@@ -265,19 +276,19 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
         }
         return true;
     }
-    
+
     public static void outputEnable() {
         if (invOE != null) {
             invOE.low();
         }
     }
-    
+
     public static void outputDisable() {
         if (invOE != null) {
             invOE.high();
         }
     }
-    
+
     public void setOutputPolarity(SERVOPWMPI.OutputPolarity mode) {
         this.device.setOutputPolarity(mode);
         logger.info(String.format("[%s]: changed polarity mode (INVRT) mode to: %s", this.id, mode.toString()));
@@ -320,7 +331,7 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
             invOE = null;
         }
         this.i2cAddress = -1;
-        
+
         return this;
     }
 
