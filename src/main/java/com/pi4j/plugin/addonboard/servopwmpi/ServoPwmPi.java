@@ -10,7 +10,7 @@ package com.pi4j.plugin.addonboard.servopwmpi;
  * This file is an extension for the Pi4J project. More information about
  * this project can be found here:  https://pi4j.com/
  * **********************************************************************
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -60,15 +60,16 @@ public class ServoPwmPi implements AddOnBoard {
     public static final String SERVOPWMPIZERO_PWM_PROVIDER_NAME = BOARD_NAME + " PWM Provider";
     /** Constant <code>PWM_PROVIDER_ID="ID + -pwm"</code> */
     public static final String SERVOPWMPIZERO_PWM_PROVIDER_ID = BOARD_ID + "-pwm";
-    
-    // Inverse output enable control GPIO pin ID (on Raspberry Pi host)
-    public static final String SERVOPWMPIZERO_OE_CONTROL_PIN_ID = BOARD_ID + "-Inv(OE)";
-    
+
+    // Inverse output enable control GPIO ID (on Raspberry Pi host)
+    public static final String SERVOPWMPIZERO_OE_CONTROL_GPIO_ID = BOARD_ID + "-Inv(OE)";
+    public static final String SERVOPWMPIZERO_OE_CONTROL_GPIO_KEY = "linux." + BOARD_ID + ".gpio.oe.number";
+
     private final Provider providers[] = {
             ServoPwmPiProvider.newInstance(),
     };
     private ServoPwmPiPlatform platform = null;
-    
+
     static Iterable<AddOnBoard> getAddOnBoards() {
         return ServiceLoader.load(AddOnBoard.class);
     }
@@ -84,7 +85,7 @@ public class ServoPwmPi implements AddOnBoard {
         } else {
             throw new InitializeException(String.format("Servo PWM Pi platform '%s' has altrady been initialised", this.platform.id()));
         }
-        
+
     }
 
     /** {@inheritDoc} */

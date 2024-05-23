@@ -14,9 +14,13 @@ import java.util.Map;
 public interface SERVOPWMPI {
 
     /**
-     * Servo PWM Pi data sheet link
+     * Servo PWM Pi data sheet link.
      */
     static final String DATASHEET = "https://www.abelectronics.co.uk/docs/pdf/pca9685.pdf";
+    /**
+     * Servo PWM Pi schematics link.
+     */
+    static final String SCHEMATIC = "https://www.abelectronics.co.uk/docs/pdf/schematic-servopi-zero.pdf";
 
     // supported I2C addresses based on hardware configured pins [A0], [A1], [A2], [A3], [A4].and [A5].
     static final int ADDRESS_000000 = 0x40;
@@ -84,7 +88,13 @@ public interface SERVOPWMPI {
     static final int ADDRESS_111110 = 0x7E;
     static final int ADDRESS_111111 = 0x7F;
 
-    // connected Raspberry Pi GPIO pin number for OE (output enable/disable) control
+    /*
+     * Raspberry Pi GPIO pin number for OE (output enable/disable) control.
+     * OE control of the Servo PWM Pi add-on board requires soldering of a
+     * bridge (see {@link #SCHEMATIC}).
+     * Therefore, OE control is a optional feature and must be enabled
+     * explicitly during initialisation of the ServoPWMPi plugin.
+     */
     static final int PI_GPIO_OE = 4; // PIN 7 = BCM 4
 
     // default settings

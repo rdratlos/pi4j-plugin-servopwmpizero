@@ -38,3 +38,35 @@ After Pi4J V2 has been successfully installed enter the following commands to bu
 cd ../pi4j-plugin-servopwmpi
 mvn clean install
 ```
+
+### Servo PWM Pi Output Enable/disable (OE) Control
+
+The active LOW Output Enable input pads (OE) on the Servo PWM Pi board allows asynchronous control of the PWM outputs and can be used to set all the outputs to a defined I2C-bus programmable logic state. The OE can also be used to externally ‘pulse width modulate’ the outputs, which is useful when multiple devices need to be dimmed or blinked together using software control. By bridging the solder pads on the Servo PWM Pi board marked OE the OE control can be connected to pin 7 (GPIO 4) on the Raspberry Pi GPIO.
+
+Pi4J plugin pi4j-plugin-servopwmpi assumes the control over Raspberry Pi GPIO 4 for OE control of the Servo PWM Pi board. for this purpose application must inform the plugin, which GPIO number to use for the Raspberry Pi GPIO 4 pin. This is done using Pi4J Runtime Properties. There are two recommended ways for enabling Raspberry Pi GPIO OE control and configuration of the Pi GPIO number:
+
+1. Java System Property pi4j.linux.servopwmpizero.gpio.oe.number  
+  Set this property to the Raspberry Pi GPIO number to enable OE control
+2. Environment variable PI4J_LINUX_SERVOPWMPIZERO_GPIO_OE_NUMBER  
+  Set the environment variable to the Raspberry Pi GPIO number to enable OE control
+
+The GPIO number to be configured depends on the Raspberry Pi OS:
+
+* Raspberry Pi OS Bullseye  
+  Use GPIO number 4
+* Raspberry Pi OS Bookworm  
+  The GPIO number for Raspberry Pi GPIO 4 depends on the GPIO chip that control the pin. To retrieve the correct number open a Bash terminal and enter the following command:  
+  
+```
+  $ cat /sys/kernel/debug/gpio
+  gpiochip0: GPIOs 512-565, parent: platform/20200000.gpio, pinctrl-bcm2835:
+  gpio-512 (ID_SDA              )
+  gpio-513 (ID_SCL              )
+  gpio-514 (GPIO2               )
+  gpio-515 (GPIO3               )
+  gpio-516 (GPIO4               )
+  gpio-517 (GPIO5               )
+```
+
+
+> Look for the line with GPIO name GPIO4 and read the GPIO number entry, which defines the GPIO number to be used, e. g. gpio-516 -> 516.

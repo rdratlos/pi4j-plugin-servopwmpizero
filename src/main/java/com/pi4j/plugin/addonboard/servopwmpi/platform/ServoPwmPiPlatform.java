@@ -82,14 +82,10 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
               ServoPwmPi.SERVOPWMPIZERO_PLATFORM_NAME + String.format(" (i2c: 0x%x)", i2c_address),
               ServoPwmPi.SERVOPWMPIZERO_PLATFORM_DESCRIPTION);
         this.i2cAddress = i2c_address;
-        this.piGpioInvOENumber = SERVOPWMPI.PI_GPIO_OE;
     }
 
     public ServoPwmPiPlatform(int i2c_address, int pi_gpio_invOE_number) {
-        super(ServoPwmPi.SERVOPWMPIZERO_PLATFORM_ID + String.format("_%d", i2c_address),
-              ServoPwmPi.SERVOPWMPIZERO_PLATFORM_NAME + String.format(" (i2c: 0x%x)", i2c_address),
-              ServoPwmPi.SERVOPWMPIZERO_PLATFORM_DESCRIPTION);
-        this.i2cAddress = i2c_address;
+        this(i2c_address);
         this.piGpioInvOENumber = pi_gpio_invOE_number;
     }
 
@@ -144,35 +140,46 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
 
         if (invOE == null && context.hasProvider(IOType.DIGITAL_OUTPUT)) {
             /*
-             * Servo PWM Pi Context wants OE control of the add-on board.
+             * Servo PWM Pi Context allows OE control of the add-on board.
              * All piggy-backed Servo PWM Pi boards share one Raspberry Pi
              * GPIO pin for OE control (DOUT-4). We should only provide it once
              * to avoid error messages.
             */
-            if(context.registry().exists(ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_PIN_ID)) {
-                invOE = context.registry().get(ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_PIN_ID);
-            }
-            if (invOE == null) {
-                String preferredOEProvider;
-                if (context.hasProvider(LinuxFsDigitalOutputProvider.ID)) {
-                    preferredOEProvider = LinuxFsDigitalOutputProvider.ID;
-                } else {
-                    preferredOEProvider = context.provider(IOType.DIGITAL_OUTPUT).id();
+            if(context.registry().exists(ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_GPIO_ID)) {
+                invOE = context.registry().get(ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_GPIO_ID);
+            } else {
+                /*
+                 * Servo PWM Pi board OE control is optional and requires soldering
+                 * of a bridge in order to work. Users must explicitly request OE
+                 * control by passing the GPIO number of the Raspberry Pi host that
+                 * is connected to the Servo PWM Pi OE input.
+                 */
+                if (context.properties().has(ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_GPIO_KEY)) {
+                    logger.info( String.format( "Found GPIO OE property %s: %s", ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_GPIO_KEY, context.properties().get( ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_GPIO_KEY ) ) );
+                    this.piGpioInvOENumber = context.properties().getInteger( ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_GPIO_KEY, this.piGpioInvOENumber );
                 }
-                var oeConfig = DigitalOutput.newConfigBuilder(context)
-                        .id(ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_PIN_ID)
-                        .name("Servo PWM Pi O\u0305E\u0305 control")
-                        .address(this.piGpioInvOENumber)
-                        .shutdown(DigitalState.HIGH)
-                        .initial(DigitalState.HIGH)
-                        .provider(preferredOEProvider);
-                invOE = context.create(oeConfig);
-                invOE.addListener((DigitalStateChangeEvent e) -> {
-                    logger.info(String.format("Servo PWM Pi O\u0305E\u0305 control: outputs %s", (e.state() == DigitalState.HIGH) ? "disabled" : "enabled"));
-                });
-                logger.info("adding digital output to registry [id={}; name={}; description={}; class={}]",
-                            invOE.id(), invOE.name(), invOE.description(), invOE.getClass().getName());
             }
+        }
+        if (invOE == null && piGpioInvOENumber > 0) {
+            String preferredOEProvider;
+            if (context.hasProvider(LinuxFsDigitalOutputProvider.ID)) {
+                preferredOEProvider = LinuxFsDigitalOutputProvider.ID;
+            } else {
+                preferredOEProvider = context.provider(IOType.DIGITAL_OUTPUT).id();
+            }
+            var oeConfig = DigitalOutput.newConfigBuilder(context)
+                    .id(ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_GPIO_ID)
+                    .name("Servo PWM Pi O\u0305E\u0305 control")
+                    .address(this.piGpioInvOENumber)
+                    .shutdown(DigitalState.HIGH)
+                    .initial(DigitalState.HIGH)
+                    .provider(preferredOEProvider);
+            invOE = context.create(oeConfig);
+            invOE.addListener((DigitalStateChangeEvent e) -> {
+                logger.info(String.format("Servo PWM Pi O\u0305E\u0305 control: outputs %s", (e.state() == DigitalState.HIGH) ? "disabled" : "enabled"));
+            });
+            logger.info("adding digital output to registry [id={}; name={}; description={}; class={}]",
+                        invOE.id(), invOE.name(), invOE.description(), invOE.getClass().getName());
         }
 
         this.context = context;
@@ -325,7 +332,7 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
              * No more Servo PWM Pi platforms left
              * Shutdown and remove output enable control GPIO pin if still in Pi4J registry
              */
-            if(context.registry().exists(ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_PIN_ID)) {
+            if(context.registry().exists(ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_GPIO_ID)) {
                 invOE.shutdown(context);
             }
             invOE = null;
