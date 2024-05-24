@@ -13,7 +13,7 @@
     <artifactId>pi4j-plugin-servopwmpi</artifactId>
     <name>Pi4J :: PLUGIN   :: Servo PWM PI Add-on Board</name>
     <description>Pi4J Plugin for the Servo PWM Pi Raspberry Pi expansion board</description>
-    <version>1.0</version>
+    <version>1.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <!-- SOURCE CONTROL -->
@@ -21,7 +21,7 @@
         <developerConnection>scm:git:ssh://${server.scm.ssh.user}@${server.scm.host}/${server.scm.project}/pi4j-plugin-servopwmpi.git</developerConnection>
         <connection>scm:git:https://${server.scm.host}/${server.scm.project}/pi4j-plugin-servopwmpi.git</connection>
         <url>https://${server.scm.host}/${server.scm.project}/pi4j-plugin-servopwmpi.git</url>
-        <tag>1.0-SERVOPWMPI</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <!-- DEPENDENCIES -->
