@@ -48,6 +48,7 @@ import com.pi4j.plugin.addonboard.servopwmpi.provider.pwm.ServoPwmPiProvider;
 import com.pi4j.plugin.addonboard.servopwmpi.provider.pwm.ServoPwmPiPwm;
 import com.pi4j.plugin.addonboard.servopwmpi.provider.pwm.ServoPwmPiPwmConfig;
 import com.pi4j.plugin.linuxfs.provider.gpio.digital.LinuxFsDigitalOutputProvider;
+import com.pi4j.plugin.gpiod.provider.gpio.digital.GpioDDigitalOutputProvider;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -162,7 +163,9 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
         }
         if (invOE == null && piGpioInvOENumber > 0) {
             String preferredOEProvider;
-            if (context.hasProvider(LinuxFsDigitalOutputProvider.ID)) {
+            if (context.hasProvider(GpioDDigitalOutputProvider.ID)) {
+                preferredOEProvider = GpioDDigitalOutputProvider.ID;
+            } else if (context.hasProvider(LinuxFsDigitalOutputProvider.ID)) {
                 preferredOEProvider = LinuxFsDigitalOutputProvider.ID;
             } else {
                 preferredOEProvider = context.provider(IOType.DIGITAL_OUTPUT).id();

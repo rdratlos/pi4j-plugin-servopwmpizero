@@ -13,7 +13,6 @@
     <artifactId>pi4j-plugin-servopwmpi</artifactId>
     <name>Pi4J :: PLUGIN   :: Servo PWM PI Add-on Board</name>
     <description>Pi4J Plugin for the Servo PWM Pi Raspberry Pi expansion board</description>
-    <version>2.6.3-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <!-- SOURCE CONTROL -->
@@ -29,6 +28,11 @@
         <dependency>
             <groupId>com.pi4j</groupId>
             <artifactId>pi4j-core</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.pi4j</groupId>
+            <artifactId>pi4j-plugin-gpiod</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>

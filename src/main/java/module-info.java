@@ -29,6 +29,7 @@ import com.pi4j.plugin.addonboard.servopwmpi.ServoPwmPi;
 module com.pi4j.plugin.addonboard.servopwmpi {
     requires org.slf4j;
     requires com.pi4j;
+    requires com.pi4j.plugin.gpiod;
     requires com.pi4j.plugin.linuxfs;
 
     // exposed interfaces/classes
