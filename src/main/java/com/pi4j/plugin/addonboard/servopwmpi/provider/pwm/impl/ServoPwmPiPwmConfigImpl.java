@@ -31,6 +31,7 @@ import com.pi4j.config.exception.ConfigException;
 import com.pi4j.config.exception.ConfigMissingRequiredKeyException;
 import com.pi4j.io.*;
 import com.pi4j.io.pwm.PwmConfig;
+import com.pi4j.io.pwm.PwmPolarity;
 import com.pi4j.io.pwm.PwmPreset;
 import com.pi4j.io.pwm.PwmType;
 import com.pi4j.util.StringUtil;
@@ -57,6 +58,7 @@ public class ServoPwmPiPwmConfigImpl
     protected Integer address = null;
     protected Float dutyCycle = null;
     protected Float phaseShift = null;
+    protected PwmPolarity polarity = PwmPolarity.NORMAL;
     protected PwmType pwmType = PwmType.HARDWARE;
     protected Float shutdownValue = null;
     protected Float initialValue = null;
@@ -96,7 +98,7 @@ public class ServoPwmPiPwmConfigImpl
         } else {
             throw new ConfigMissingRequiredKeyException(ADDRESS_KEY);
         }
-        
+
         Pattern pattern = Pattern.compile("[-_]([0-9]+)$");
         Matcher matcher = pattern.matcher(this.platform);
         String pwmID;
@@ -219,6 +221,11 @@ public class ServoPwmPiPwmConfigImpl
     @Override
     public Collection<PwmPreset> presets() {
         return this.presets;
+    }
+
+    @Override
+    public PwmPolarity polarity() {
+        return this.polarity;
     }
 
 }
