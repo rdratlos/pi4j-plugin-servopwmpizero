@@ -16,12 +16,14 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
 
     // local/internal I2C reference for communication with hardware chip
     protected final I2C i2c;
-    
+
     // PWM frequency (same for all PWM outputs)
     private int requested_pwm_frequency = DEFAULT_PWM_FREQUENCY;
 
     // PWM frequency (same for all PWM outputs)
     private int actual_pwm_frequency = DEFAULT_PWM_FREQUENCY;
+
+    private Context context = null;
 
     /**
      * Constructor
@@ -36,17 +38,18 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
     @Override
     public void initialize(Context context) throws InitializeException {
         byte pre_scale;
-        
+
         // atomic operation to configure chip registers
         try {
             // Detect current ServoPWM Pi PWM frequency settings
             pre_scale = (byte) this.i2c.readRegister(REGISTER_PRE_SCALE);
-            this.actual_pwm_frequency = preScaleToFrequency(pre_scale);
+            this.actual_pwm_frequency = SERVOPWMPI.preScaleToFrequency(pre_scale);
             if (pre_scale != DEFAULT_PRE_SCALE) {
                 this.requested_pwm_frequency = this.actual_pwm_frequency;
             } else {
                 this.requested_pwm_frequency = DEFAULT_PWM_FREQUENCY;
             }
+            this.context = context;
         } catch (Pi4JException e) {
             if (this.i2c != null) {
                 throw new InitializeException("ServoPwmPiDeviceImpl::initialize() I2C connection to Servo PWM Pi device (" + String.format("0x%x", this.i2c.device()) + ") failed");
@@ -74,12 +77,12 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
     /** {@inheritDoc} */
     @Override
     public void initialize(ServoPwmPiPwm io) throws InitializeException {
-        int address = io.getAddress();
+        int channel = io.getChannel();
 
-        if (address < 0 || address > 15) {
-            throw new InitializeException("initialize(): Configured PWM sddress (LED" + String.format("%d", address) + ") is out of range (LED0 - LED16)");
+        if (channel < 0 || channel > 15) {
+            throw new InitializeException("initialize(): Configured PWM channel (LED" + String.format("%d", channel) + ") is out of range (LED0 - LED16)");
         }
-        
+
     }
 
     /** {@inheritDoc} */
@@ -100,7 +103,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
         int on_value;
         int off_value;
         int on_steps;
-        
+
         on_steps = Math.round(4096f / 100f * dutyCycle);
         switch(on_steps) {
             case 4096:
@@ -139,10 +142,10 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
         }
         try {
             synchronized (this.i2c) {
-                this.i2c.writeRegister(LED0_ON_L + 4 * io.address(), (byte) (on_value & 0xFF));
-                this.i2c.writeRegister(LED0_ON_H + 4 * io.address(), (byte) (on_value >> 8));
-                this.i2c.writeRegister(LED0_OFF_L + 4 * io.address(), (byte) (off_value & 0xFF));
-                this.i2c.writeRegister(LED0_OFF_H + 4 * io.address(), (byte) (off_value >> 8));
+                this.i2c.writeRegister(LED0_ON_L + 4 * io.channel(), (byte) (on_value & 0xFF));
+                this.i2c.writeRegister(LED0_ON_H + 4 * io.channel(), (byte) (on_value >> 8));
+                this.i2c.writeRegister(LED0_OFF_L + 4 * io.channel(), (byte) (off_value & 0xFF));
+                this.i2c.writeRegister(LED0_OFF_H + 4 * io.channel(), (byte) (off_value >> 8));
             }
         } catch (Pi4JException e) {
             if (this.i2c != null) {
@@ -158,13 +161,13 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
     public void off(ServoPwmPiPwm io) throws IOException {
         int on_value = 0;
         int off_value = 0x1000;
-        
+
         try {
             synchronized (this.i2c) {
-                this.i2c.writeRegister(LED0_ON_L + 4 * io.address(), (byte) on_value);
-                this.i2c.writeRegister(LED0_ON_H + 4 * io.address(), (byte) on_value);
-                this.i2c.writeRegister(LED0_OFF_L + 4 * io.address(), (byte) (off_value & 0xFF));
-                this.i2c.writeRegister(LED0_OFF_H + 4 * io.address(), (byte) (off_value >> 8));
+                this.i2c.writeRegister(LED0_ON_L + 4 * io.channel(), (byte) on_value);
+                this.i2c.writeRegister(LED0_ON_H + 4 * io.channel(), (byte) on_value);
+                this.i2c.writeRegister(LED0_OFF_L + 4 * io.channel(), (byte) (off_value & 0xFF));
+                this.i2c.writeRegister(LED0_OFF_H + 4 * io.channel(), (byte) (off_value >> 8));
             }
         } catch (Pi4JException e) {
             if (this.i2c != null) {
@@ -223,7 +226,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
              * Set new PWM frequency and wake-up PWM controller
              */
             synchronized (this.i2c) {
-                this.i2c.writeRegister(REGISTER_PRE_SCALE, frequencyToPreScale(frequency));
+                this.i2c.writeRegister(REGISTER_PRE_SCALE, SERVOPWMPI.frequencyToPreScale(frequency));
                 this.i2c.writeRegister(REGISTER_MODE_1, currentMode1State);
             }
             try {
@@ -241,7 +244,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
             }
             this.requested_pwm_frequency = frequency;
             try {
-                this.actual_pwm_frequency = preScaleToFrequency((byte) this.i2c.readRegister(REGISTER_PRE_SCALE));
+                this.actual_pwm_frequency = SERVOPWMPI.preScaleToFrequency((byte) this.i2c.readRegister(REGISTER_PRE_SCALE));
             } catch (IllegalStateException e) {
                 this.actual_pwm_frequency = this.requested_pwm_frequency;
             }
@@ -253,7 +256,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
      */
     private void refreshPwmFrequencyConfiguration () throws IOException {
         byte pre_scale;
-        
+
         try {
             pre_scale = (byte) this.i2c.readRegister(REGISTER_PRE_SCALE);
         } catch (Pi4JException e) {
@@ -270,7 +273,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
                 throw new InitializeException("ServoPwmPiDeviceImpl::refreshPwmFrequencyConfiguration() I2C connection to Servo PWM Pi device not configured");
             }
         }
-        this.actual_pwm_frequency = preScaleToFrequency(pre_scale);
+        this.actual_pwm_frequency = SERVOPWMPI.preScaleToFrequency(pre_scale);
         if (pre_scale == DEFAULT_PRE_SCALE) {
             this.requested_pwm_frequency = DEFAULT_PWM_FREQUENCY;
         } else {
@@ -278,41 +281,12 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
         }
     }
 
-    /**
-     * Convert PWM frequency into ServoPWMPi PRE_SCALE register value
-     * @param frequency
-     * @return PRE_SCALE value
-     */
-    public static byte frequencyToPreScale (int frequency) {
-        double freqeval;
-        
-        freqeval = FREQ_OSC_CLOCK;
-        freqeval /= 4096.0;
-        freqeval /= (double) frequency;
-        freqeval -= 1.0;
-        return (byte) Math.floor(freqeval + 0.5);
-    }
-
-    /**
-     * Convert ServoPWMPi PRE_SCALE register value into PWM frequency
-     * @param pre_scale
-     * @return PWM frequency
-     */
-    public static int preScaleToFrequency (byte pre_scale) {
-        double freqeval;
-        
-        freqeval = FREQ_OSC_CLOCK;
-        freqeval /= 4096.0;
-        freqeval /= (double) (pre_scale + 1);
-        return (int) Math.floor(freqeval + 0.5);
-    }
-
     /** {@inheritDoc} */
     @Override
     public void sleep() throws IOException {
         byte currentMode1State;
         byte sleepMode;
-        
+
         if (!this.isSleeping()) {
             try {
                 currentMode1State = (byte) this.i2c.readRegister(REGISTER_MODE_1);
@@ -336,7 +310,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
     public void wake() throws IOException {
         byte currentMode1State;
         byte wakeUpMode;
-        
+
         if (this.isSleeping()) {
             try {
                 currentMode1State = (byte) this.i2c.readRegister(REGISTER_MODE_1);
@@ -360,7 +334,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
     public boolean isSleeping() throws IOException {
         byte currentMode1State;
         byte sleepStatus;
-        
+
         try {
             currentMode1State = (byte) this.i2c.readRegister(REGISTER_MODE_1);
         } catch (Pi4JException e) {
@@ -378,7 +352,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
             }
         }
         sleepStatus = (byte) (currentMode1State & SLEEP_MASK);
-        
+
         return (sleepStatus != 0);
     }
 
@@ -396,7 +370,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
     public OutputPolarity getOutputPolarity() throws IOException {
         byte currentMode2State;
         byte outputMode;
-        
+
         try {
             currentMode2State = (byte) this.i2c.readRegister(REGISTER_MODE_2);
         } catch (Pi4JException e) {
@@ -422,7 +396,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
     public void setOutputPolarity(OutputPolarity mode) throws IOException {
         byte currentMode2State;
         byte outputMode;
-        
+
         try {
             currentMode2State = (byte) this.i2c.readRegister(REGISTER_MODE_2);
         } catch (Pi4JException e) {
@@ -453,7 +427,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
     public OutputDriver getOutputDriverType() throws IOException {
         byte currentMode2State;
         byte outputType;
-        
+
         try {
             currentMode2State = (byte) this.i2c.readRegister(REGISTER_MODE_2);
         } catch (Pi4JException e) {
@@ -479,7 +453,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
     public void setOutputDriverType(OutputDriver type) throws IOException {
         byte currentMode2State;
         byte outputType;
-        
+
         try {
             currentMode2State = (byte) this.i2c.readRegister(REGISTER_MODE_2);
         } catch (Pi4JException e) {
@@ -510,7 +484,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
     public OEMode getOutNEMode() throws IOException {
         byte currentMode2State;
         byte oePinMode;
-        
+
         try {
             currentMode2State = (byte) this.i2c.readRegister(REGISTER_MODE_2);
         } catch (Pi4JException e) {
@@ -530,7 +504,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
         oePinMode = (byte) (currentMode2State & OUTNE_MASK);
         if (oePinMode == OEMode.HIGH.getValue()) {
             /*
-             * PWM pins are set to high-impedance, if pin output type is open-drain  
+             * PWM pins are set to high-impedance, if pin output type is open-drain
              */
             if (getOutputDriverType() == OutputDriver.OPEN_DRAIN) {
                 return OEMode.HIGH_IMPEDANCE;
@@ -545,7 +519,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
     @Override
     public String getOutNEModeBitstring() throws IOException {
         byte currentMode2State;
-        
+
         try {
             currentMode2State = (byte) this.i2c.readRegister(REGISTER_MODE_2);
         } catch (Pi4JException e) {
@@ -571,7 +545,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
     public void setOutNEMode(OEMode mode) throws IOException {
         byte currentMode2State;
         byte oePinMode;
-        
+
         try {
             currentMode2State = (byte) this.i2c.readRegister(REGISTER_MODE_2);
         } catch (Pi4JException e) {
@@ -602,7 +576,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
     public OutputsChangeMode getOutputsChangeMode() throws IOException {
         byte currentMode2State;
         byte ochMode;
-        
+
         try {
             currentMode2State = (byte) this.i2c.readRegister(REGISTER_MODE_2);
         } catch (Pi4JException e) {
@@ -628,7 +602,7 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
     public void setOutputsChangeMode(OutputsChangeMode mode) throws IOException {
         byte currentMode2State;
         byte ochMode;
-        
+
         try {
             currentMode2State = (byte) this.i2c.readRegister(REGISTER_MODE_2);
         } catch (Pi4JException e) {
@@ -652,5 +626,9 @@ public class ServoPwmPiDeviceImpl implements SERVOPWMPI, ServoPwmPiDevice {
                 this.i2c.writeRegister(REGISTER_MODE_2, (byte) (currentMode2State & ~OCH_MASK | ochMode));
             }
         }
+    }
+
+    public boolean isInitialized() {
+        return (this.context != null);
     }
 }

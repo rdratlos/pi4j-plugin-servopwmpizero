@@ -42,6 +42,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.pi4j.plugin.addonboard.servopwmpi.provider.pwm.ServoPwmPiPwmConfig;
 
 /**
@@ -53,8 +57,10 @@ import com.pi4j.plugin.addonboard.servopwmpi.provider.pwm.ServoPwmPiPwmConfig;
 public class ServoPwmPiPwmConfigImpl
         extends ConfigBase<PwmConfig>
         implements IOConfig<PwmConfig>, AddressConfig<PwmConfig>, ServoPwmPiPwmConfig {
+    private static final Logger logger = LoggerFactory.getLogger(ServoPwmPiPwmConfigImpl.class);
 
     // private configuration properties
+    protected Integer channel = null;
     protected Integer address = null;
     protected Float dutyCycle = null;
     protected Float phaseShift = null;
@@ -92,9 +98,9 @@ public class ServoPwmPiPwmConfigImpl
             throw new ConfigMissingRequiredKeyException(PLATFORM_KEY);
         }
 
-        // load address property
+        // load address (=Servo PWM Pi PWM channel number) property
         if(properties.containsKey(ADDRESS_KEY)){
-            this.address = Integer.parseInt(properties.get(ADDRESS_KEY));
+            this.channel = Integer.parseInt(properties.get(ADDRESS_KEY));
         } else {
             throw new ConfigMissingRequiredKeyException(ADDRESS_KEY);
         }
@@ -102,8 +108,11 @@ public class ServoPwmPiPwmConfigImpl
         Pattern pattern = Pattern.compile("[-_]([0-9]+)$");
         Matcher matcher = pattern.matcher(this.platform);
         String pwmID;
-        if (matcher.find()) {
-            pwmID = String.format("SERVOPWM-%s.%d", matcher.group(1), this.address);
+        if ( matcher.find() ) {
+            Integer i2c_address = Integer.parseInt( matcher.group(1) );
+            int platform_prefix = i2c_address.intValue() & 0xFF;
+            this.address = Integer.valueOf( platform_prefix * 256 + this.channel.intValue() );
+            pwmID = String.format( "SERVOPWM-%s.%d", platform_prefix, this.channel );
         } else {
             throw new ConfigException("Configuration key platform has invalid Servo PWM Pi platform ID");
         }
@@ -167,6 +176,11 @@ public class ServoPwmPiPwmConfigImpl
     }
 
     @Override
+    public Integer getChannel() {
+        return this.channel;
+    }
+
+   @Override
     public String provider() {
         return this.provider;
     }
@@ -187,8 +201,9 @@ public class ServoPwmPiPwmConfigImpl
     }
 
     @Override
-    public Integer frequency() throws ConfigException {
-        throw new ConfigException("Servo PWM Pi does not support per PWM pin frequency configuration.");
+    public Integer frequency() {
+        logger.debug( "Ignoring per PWM pin frequency configuration for PWM '{}'", this.id );
+        return null;
     }
 
     @Override

@@ -503,6 +503,35 @@ public interface SERVOPWMPI {
         }
     }
 
+    /**
+     * Convert PWM frequency into ServoPWMPi PRE_SCALE register value
+     * @param frequency
+     * @return PRE_SCALE value
+     */
+    public static byte frequencyToPreScale (int frequency) {
+        double freqeval;
+
+        freqeval = FREQ_OSC_CLOCK;
+        freqeval /= 4096.0;
+        freqeval /= frequency;
+        freqeval -= 1.0;
+        return (byte) Math.floor(freqeval + 0.5);
+    }
+
+    /**
+     * Convert ServoPWMPi PRE_SCALE register value into PWM frequency
+     * @param pre_scale ServoPWMPi PRE_SCALE register value
+     * @return PWM frequency
+     */
+    public static int preScaleToFrequency (byte pre_scale) {
+        double freqeval;
+
+        freqeval = FREQ_OSC_CLOCK;
+        freqeval /= 4096.0;
+        freqeval /= pre_scale + 1;
+        return (int) Math.floor(freqeval + 0.5);
+    }
+
 }
 
 

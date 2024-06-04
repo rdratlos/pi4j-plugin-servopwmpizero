@@ -44,18 +44,18 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Reim
  * @version $Id: $Id
  */
-public class ServoPwmPiPwmConfigBuilderImpl
+public class ServoPwmPiPwmConfigBuilderBase
         extends AddOnBoardIOAddressConfigBuilderBase<ServoPwmPiPwmConfigBuilder, ServoPwmPiPwmConfig>
         implements ServoPwmPiPwmConfigBuilder {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     protected List<PwmPreset> presets = new ArrayList<>();
 
-    /**  
+    /**
      * PRIVATE CONSTRUCTOR
      * @param context Pi4J context
      */
-    protected ServoPwmPiPwmConfigBuilderImpl(Context context){
+    protected ServoPwmPiPwmConfigBuilderBase(Context context){
         super(context);
     }
 
@@ -66,7 +66,7 @@ public class ServoPwmPiPwmConfigBuilderImpl
      * @return a ServoPwmPiPwmConfigBuilderImpl object.
      */
     public static ServoPwmPiPwmConfigBuilder newInstance(Context context) {
-        return new ServoPwmPiPwmConfigBuilderImpl(context);
+        return new ServoPwmPiPwmConfigBuilderBase(context);
     }
 
     /**
@@ -79,7 +79,7 @@ public class ServoPwmPiPwmConfigBuilderImpl
      * @return this builder instance
      */
     @Override
-    public ServoPwmPiPwmConfigBuilderImpl phaseShift(Number phaseShift) {
+    public ServoPwmPiPwmConfigBuilderBase phaseShift(Number phaseShift) {
         // bounds check the phase shift value
         float ps = phaseShift.floatValue();
         if(ps > 100) ps = 100f;
@@ -105,7 +105,7 @@ public class ServoPwmPiPwmConfigBuilderImpl
     /** {@inheritDoc} */
     @Override
     public ServoPwmPiPwmConfigBuilder shutdown(Number dutyCycle) {
-        // bounds check the duty-cycle value
+        // bounds check the shutdown duty-cycle value
         float dc = dutyCycle.floatValue();
         if(dc < 0) dc = 0f;
         if(dc > 100) dc = 100f;
@@ -118,7 +118,7 @@ public class ServoPwmPiPwmConfigBuilderImpl
     @Override
     public ServoPwmPiPwmConfigBuilder initial(Number dutyCycle) {
 
-        // bounds check the duty-cycle value
+        // bounds check the initial duty-cycle value
         float dc = dutyCycle.floatValue();
         if(dc < 0) dc = 0f;
         if(dc > 100) dc = 100f;
@@ -155,6 +155,7 @@ public class ServoPwmPiPwmConfigBuilderImpl
             }
         }
         ServoPwmPiPwmConfig config = new ServoPwmPiPwmConfigImpl(this.getResolvedProperties(), this.presets);
+
         return config;
     }
 }

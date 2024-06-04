@@ -1,5 +1,7 @@
 package com.pi4j.plugin.addonboard.servopwmpi.provider.pwm.impl;
 
+import com.pi4j.boardinfo.util.BoardInfoHelper;
+
 /*
  * #%L
  * **********************************************************************
@@ -10,7 +12,7 @@ package com.pi4j.plugin.addonboard.servopwmpi.provider.pwm.impl;
  * This file is an extension for the Pi4J project. More information about
  * this project can be found here:  https://pi4j.com/
  * **********************************************************************
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -56,6 +58,12 @@ public class ServoPwmPiProviderImpl extends PwmProviderBase implements ServoPwmP
         this.name = NAME;
     }
 
+    @Override
+    public int getPriority() {
+        // the Servo PWM Pi PWM driver should be higher priority than conflicting (new) Linux FS PWM driver
+        return BoardInfoHelper.usesRP1() ? 150 : 100;
+    }
+
     /**
      * <p>create.</p>
      *
@@ -64,7 +72,8 @@ public class ServoPwmPiProviderImpl extends PwmProviderBase implements ServoPwmP
      */
     @Override
     public ServoPwmPiPwm create(ServoPwmPiPwmConfig config) throws ProviderException {
-        
+        ServoPwmPiPwm pwm = null;
+
         // validate provider setup
         if(this.platforms.isEmpty()){
             throw new ProviderException("ServoPwmPiProvider::add(...) has not been called; this provider must be configured using the add() method prior to creating I/O instances.");
@@ -72,7 +81,7 @@ public class ServoPwmPiProviderImpl extends PwmProviderBase implements ServoPwmP
 
         if (!config.getPlatform().isEmpty()) {
             if (this.platforms.containsKey(config.getPlatform())) {
-                return new ServoPwmPiPwmImpl(this, platforms.get(config.getPlatform()).pwmDevice(), config);
+                pwm = new ServoPwmPiPwmImpl(this, platforms.get(config.getPlatform()).pwmDevice(), config);
             } else {
                 throw new ProviderException(String.format("Servo PWM Pi platform '%s' does not exist", config.getPlatform()));
             }
@@ -81,10 +90,13 @@ public class ServoPwmPiProviderImpl extends PwmProviderBase implements ServoPwmP
                 throw new ProviderException(String.format("Please specify the Servo PWM Pi platform to use for PWM pin '%s'", config.id()));
             }
         }
-        
+
         // create new output I/O instance
-        ServoPwmPiPwm pwm = new ServoPwmPiPwmImpl(this, this.platforms.values().stream().findFirst().get().pwmDevice(), config);
-        pwm.initialize(context);
+        if (pwm == null) {
+            pwm = new ServoPwmPiPwmImpl(this, this.platforms.values().stream().findFirst().get().pwmDevice(), config);
+        }
+
+        this.context.registry().add(pwm);
         return pwm;
     }
 

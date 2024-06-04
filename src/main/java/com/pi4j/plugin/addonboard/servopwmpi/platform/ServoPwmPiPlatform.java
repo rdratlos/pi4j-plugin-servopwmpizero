@@ -126,6 +126,8 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
             throw new ProviderNotFoundException(ServoPwmPiProvider.ID);
         }
         // Create PWM instance
+        logger.trace( "creating PWM '{}' on Servo PWM Pi '{}' using provider [{}({})]",
+                      config.getId(), this.id, provider.getId(), provider.getName() );
         return provider.create(config);
     }
 
@@ -143,8 +145,8 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
             /*
              * Servo PWM Pi Context allows OE control of the add-on board.
              * All piggy-backed Servo PWM Pi boards share one Raspberry Pi
-             * GPIO pin for OE control (DOUT-4). We should only provide it once
-             * to avoid error messages.
+             * GPIO pin for OE control (DOUT-4). We should only provide it
+             * once to avoid error messages.
             */
             if(context.registry().exists(ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_GPIO_ID)) {
                 invOE = context.registry().get(ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_GPIO_ID);
@@ -156,7 +158,7 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
                  * is connected to the Servo PWM Pi OE input.
                  */
                 if (context.properties().has(ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_GPIO_KEY)) {
-                    logger.info( String.format( "Found GPIO OE property %s: %s", ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_GPIO_KEY, context.properties().get( ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_GPIO_KEY ) ) );
+                    logger.info( String.format( "Found property %s for GPIO OE: %s", ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_GPIO_KEY, context.properties().get( ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_GPIO_KEY ) ) );
                     this.piGpioInvOENumber = context.properties().getInteger( ServoPwmPi.SERVOPWMPIZERO_OE_CONTROL_GPIO_KEY, this.piGpioInvOENumber );
                 }
             }
@@ -177,12 +179,21 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
                     .shutdown(DigitalState.HIGH)
                     .initial(DigitalState.HIGH)
                     .provider(preferredOEProvider);
+            logger.trace( "creating DigitalOutput '{}' for Servo PWM Pi '{}' using provider [{}({})]",
+                          oeConfig.id(), this.id, preferredOEProvider, context.getProvider(preferredOEProvider).getName() );
             invOE = context.create(oeConfig);
             invOE.addListener((DigitalStateChangeEvent e) -> {
                 logger.info(String.format("Servo PWM Pi O\u0305E\u0305 control: outputs %s", (e.state() == DigitalState.HIGH) ? "disabled" : "enabled"));
             });
             logger.info("adding digital output to registry [id={}; name={}; description={}; class={}]",
                         invOE.id(), invOE.name(), invOE.description(), invOE.getClass().getName());
+        }
+
+        if (invOE != null) {
+            logger.info( String.format( "Using digital output '[%s(%s)]' for O\u0305E\u0305 control of Servo PWM Pi '%s'",
+                         invOE.id(), invOE.name(), this.id ) );
+        } else {
+            logger.info( String.format( "O\u0305E\u0305 control for Servo PWM Pi '%s' not available", this.id ) );
         }
 
         this.context = context;
@@ -203,6 +214,9 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
                     pwmProvider.add(this);
                 }
                 this.addProvider(context, ServoPwmPiProvider.ID);
+            } else {
+                logger.error(ServoPwmPiProvider.ID + " provider not in context");
+                throw new InitializeException("");
             }
             try {
                 this.device.initialize(context);
@@ -310,8 +324,12 @@ public class ServoPwmPiPlatform extends AddOnBoardPlatform implements Platform {
     }
 
     public void setOutNEMode(SERVOPWMPI.OEMode mode) {
-        this.device.setOutNEMode(mode);
-        logger.info(String.format("[%s]: changed O\u0305E\u0305 pin not enabled mode (OUTNE) to: %s", this.id, mode.toString()));
+        if (invOE != null) {
+            this.device.setOutNEMode(mode);
+            logger.info(String.format("[%s]: changed O\u0305E\u0305 pin not enabled mode (OUTNE) to: %s", this.id, mode.toString()));
+        } else {
+            logger.debug(String.format("[%s]: O\u0305E\u0305 control for Servo PWM Pi not available", this.id));
+        }
     }
 
     public void setOutputsChangeMode(SERVOPWMPI.OutputsChangeMode mode) {

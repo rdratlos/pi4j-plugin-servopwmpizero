@@ -4,7 +4,7 @@ import com.pi4j.plugin.addonboard.servopwmpi.ServoPwmPi;
  * #%L
  * **********************************************************************
  * ORGANIZATION  :  Pi4J
- * PROJECT       :  Pi4J :: PLUGIN :: Servo Pwm Pi Zero Platform & Providers
+ * PROJECT       :  Pi4J :: ADDONBOARD :: Servo Pwm Pi Zero Platform & Providers
  * FILENAME      :  module-info.java
  *
  * This file is an extension for the Pi4J project. More information about
@@ -32,6 +32,8 @@ module com.pi4j.plugin.addonboard.servopwmpi {
     requires com.pi4j.plugin.gpiod;
     requires com.pi4j.plugin.linuxfs;
 
+    uses com.pi4j.extension.addonboard.AddOnBoard;
+
     // exposed interfaces/classes
     exports com.pi4j.plugin.addonboard.servopwmpi;
     exports com.pi4j.plugin.addonboard.servopwmpi.platform;
@@ -39,4 +41,7 @@ module com.pi4j.plugin.addonboard.servopwmpi {
 
     provides com.pi4j.extension.addonboard.AddOnBoard
             with ServoPwmPi;
+
+    // allow access to classes in the following namespaces for Pi4J annotation processing
+    opens com.pi4j.plugin.addonboard.servopwmpi to com.pi4j;
 }

@@ -10,7 +10,7 @@ package com.pi4j.plugin.addonboard.servopwmpi.provider.pwm.impl;
  * This file is an extension for the Pi4J project. More information about
  * this project can be found here:  https://pi4j.com/
  * **********************************************************************
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -49,6 +49,7 @@ import com.pi4j.plugin.addonboard.servopwmpi.provider.pwm.ServoPwmPiPwmConfig;
 public class ServoPwmPiPwmImpl extends PwmBase  implements ServoPwmPiPwm {
 
     protected final ServoPwmPiDevice device;
+    protected int channel = -1;
     protected float phase_shift = -1f;
 
     /**
@@ -63,6 +64,9 @@ public class ServoPwmPiPwmImpl extends PwmBase  implements ServoPwmPiPwm {
         this.device = device;
         if (config.phaseShift() != null) {
             this.phase_shift = config.phaseShift();
+        }
+        if (config.channel() != null) {
+            this.channel = config.channel().intValue();
         }
     }
 
@@ -154,9 +158,9 @@ public class ServoPwmPiPwmImpl extends PwmBase  implements ServoPwmPiPwm {
     @Override
     public void setPhaseShift(Number phase_shift) throws IOException {
         float ps = phase_shift.floatValue();
-        
+
         if (ps > 100) ps = 100;
-        
+
         if (ps < 0) {
             this.phase_shift = -1f;
         } else {
@@ -173,5 +177,12 @@ public class ServoPwmPiPwmImpl extends PwmBase  implements ServoPwmPiPwm {
             return this.phase_shift;
         }
     }
+
+    /** {@inheritDoc} */
+    @Override
+    public int getChannel() {
+        return ( this.channel);
+    }
+
 }
 

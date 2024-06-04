@@ -28,7 +28,7 @@ package com.pi4j.plugin.addonboard.servopwmpi.provider.pwm;
 import com.pi4j.context.Context;
 import com.pi4j.io.exception.IOException;
 import com.pi4j.io.pwm.Pwm;
-import com.pi4j.plugin.addonboard.servopwmpi.provider.pwm.impl.ServoPwmPiPwmConfigBuilderImpl;
+import com.pi4j.plugin.addonboard.servopwmpi.provider.pwm.impl.ServoPwmPiPwmConfigBuilderBase;
 
 /**
  * <p>ServoPwmPiPwm interface.</p>
@@ -45,7 +45,25 @@ public interface ServoPwmPiPwm extends Pwm {
      * @return a {@link ServoPwmPiPwmConfigBuilder} object.
      */
     static ServoPwmPiPwmConfigBuilder newConfigBuilder(Context context){
-        return ServoPwmPiPwmConfigBuilderImpl.newInstance(context);
+        return ServoPwmPiPwmConfigBuilderBase.newInstance(context);
+    }
+
+    /**
+     * Get the Servo PWM Pi PWM channel number/address of this PWM instance.
+     *
+     * @return PWM channel  pin number/address (0 -15 for LED1 to LED16 outputs)
+     * @throws IOException if fails to communicate with the Servo PWM Pi PWM channel
+     */
+    int getChannel() throws IOException;
+
+    /**
+     * Get the Servo PWM Pi PWM channel number/address of this PWM instance.
+     *
+     * @return PWM channel  pin number/address (0 -15 for LED1 to LED16 outputs)
+     * @throws IOException if fails to communicate with the Servo PWM Pi PWM channel
+     */
+    default int channel(){
+        return getChannel();
     }
 
     /**

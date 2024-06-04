@@ -1,5 +1,7 @@
 package com.pi4j.plugin.addonboard.servopwmpi.provider.pwm;
 
+import com.pi4j.io.exception.IOException;
+
 /*-
  * #%L
  * **********************************************************************
@@ -62,6 +64,22 @@ public interface ServoPwmPiPwmConfig extends PwmConfig {
      */
     default Float getPhaseShift() {
         return phaseShift();
+    }
+
+    /**
+     * Get the Servo PWM Pi PWM channel number/address for the PWM instance.
+     *
+     * @return PWM channel  pin number/address (0 -15 for LED1 to LED16 outputs)
+     */
+    Integer getChannel();
+
+    /**
+     * Get the Servo PWM Pi PWM channel number/address for the PWM instance.
+     *
+     * @return PWM channel  pin number/address (0 -15 for LED1 to LED16 outputs)
+     */
+    default Integer channel(){
+        return getChannel();
     }
 
 }

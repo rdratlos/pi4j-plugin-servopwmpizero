@@ -28,7 +28,7 @@ package com.pi4j.plugin.addonboard.servopwmpi.provider.pwm;
 import com.pi4j.context.Context;
 import com.pi4j.io.IOAddressConfigBuilder;
 import com.pi4j.io.pwm.PwmPreset;
-import com.pi4j.plugin.addonboard.servopwmpi.provider.pwm.impl.ServoPwmPiPwmConfigBuilderImpl;
+import com.pi4j.plugin.addonboard.servopwmpi.provider.pwm.impl.ServoPwmPiPwmConfigBuilderBase;
 
 /**
  * <p>ServoPwmPiPwmConfigBuilder interface.</p>
@@ -46,7 +46,7 @@ public interface ServoPwmPiPwmConfigBuilder
      * @return a ServoPwmPiPwmConfigBuilder object.
      */
     static ServoPwmPiPwmConfigBuilder newInstance(Context context)  {
-        return ServoPwmPiPwmConfigBuilderImpl.newInstance(context);
+        return ServoPwmPiPwmConfigBuilderBase.newInstance(context);
     }
 
     /**
